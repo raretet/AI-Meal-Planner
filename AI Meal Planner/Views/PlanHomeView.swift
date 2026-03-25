@@ -3,6 +3,8 @@ import SwiftUI
 struct PlanHomeView: View {
     @Environment(MealPlannerViewModel.self) private var model
     @State private var selectedMeal: PlannedMeal?
+    @State private var showSavePlanSheet = false
+    @State private var savePlanName = ""
 
     var body: some View {
         NavigationStack {
@@ -60,6 +62,48 @@ struct PlanHomeView: View {
             .background(AppTheme.background)
             .navigationTitle("План")
             .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showSavePlanSheet = true
+                    } label: {
+                        Image(systemName: "square.and.arrow.down")
+                    }
+                    .disabled(model.dailyPlan == nil && model.weeklyPlan == nil)
+                }
+            }
+            .sheet(isPresented: $showSavePlanSheet) {
+                NavigationStack {
+                    VStack(alignment: .leading, spacing: 16) {
+                        TextField("Название плана", text: $savePlanName)
+                            .textFieldStyle(.roundedBorder)
+                        Text("Пустое имя — подставится дата и время.")
+                            .font(.caption)
+                            .foregroundStyle(AppTheme.textSecondary)
+                        Spacer()
+                    }
+                    .padding(20)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .background(AppTheme.background)
+                    .navigationTitle("Сохранить план")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Отмена") {
+                                savePlanName = ""
+                                showSavePlanSheet = false
+                            }
+                        }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Сохранить") {
+                                model.saveCurrentPlanAsBookmark(name: savePlanName)
+                                savePlanName = ""
+                                showSavePlanSheet = false
+                            }
+                        }
+                    }
+                }
+            }
             .alert("Ошибка", isPresented: Binding(
                 get: { model.errorMessage != nil },
                 set: { if !$0 { model.clearError() } }

@@ -2,12 +2,14 @@ import SwiftUI
 
 private enum MainTab: Int, CaseIterable {
     case plan
+    case saved
     case shopping
     case settings
 
     var title: String {
         switch self {
         case .plan: return "План"
+        case .saved: return "Архив"
         case .shopping: return "Покупки"
         case .settings: return "Настройки"
         }
@@ -16,6 +18,7 @@ private enum MainTab: Int, CaseIterable {
     var asset: String {
         switch self {
         case .plan: return "icon_tab_plan"
+        case .saved: return "icon_tab_saved"
         case .shopping: return "icon_tab_cart"
         case .settings: return "icon_tab_settings"
         }
@@ -24,6 +27,7 @@ private enum MainTab: Int, CaseIterable {
     var system: String {
         switch self {
         case .plan: return "leaf.fill"
+        case .saved: return "bookmark.fill"
         case .shopping: return "cart.fill"
         case .settings: return "gearshape.fill"
         }
@@ -35,11 +39,15 @@ struct MainTabView: View {
     @State private var selected: MainTab = .plan
 
     var body: some View {
-        ZStack {
+        let _ = model.planSessionId
+        return ZStack {
             Group {
                 switch selected {
                 case .plan:
                     PlanHomeView()
+                        .id(model.planSessionId)
+                case .saved:
+                    SavedPlansListView()
                 case .shopping:
                     ShoppingListView()
                 case .settings:

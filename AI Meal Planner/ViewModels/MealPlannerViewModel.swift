@@ -13,11 +13,29 @@ final class MealPlannerViewModel {
     var mealExplanation: MealExplanationResponse?
     var ingredientSwapResult: IngredientSwapResponse?
     var shoppingTracker = ShoppingTracker()
+    var savedPlanBookmarks: [SavedPlanBookmark] = []
+    var planSessionId = UUID()
+    var activeSavedBookmarkId: UUID?
 
     private let client = MealAIClient()
 
     init() {
         preferences = UserPreferencesStorage.load()
+        savedPlanBookmarks = SavedPlansLibraryStorage.load().sorted { $0.createdAt > $1.createdAt }
+        if let id = ActiveSavedBookmarkStorage.load(),
+           savedPlanBookmarks.contains(where: { $0.id == id }) {
+            activeSavedBookmarkId = id
+        }
+        let persisted = SavedPlanStorage.load()
+        if let d = persisted.daily {
+            dailyPlan = d
+            weeklyPlan = nil
+            shoppingTracker.sync(from: d.shoppingList)
+        } else if let w = persisted.weekly {
+            weeklyPlan = w
+            dailyPlan = nil
+            shoppingTracker.sync(from: w.shoppingList)
+        }
     }
 
     func persistPreferences() {
@@ -39,6 +57,9 @@ final class MealPlannerViewModel {
             dailyPlan = plan
             weeklyPlan = nil
             shoppingTracker.sync(from: plan.shoppingList)
+            SavedPlanStorage.save(daily: plan, weekly: nil)
+            bumpPlanSession()
+            clearActiveSavedBookmark()
         }
     }
 
@@ -53,6 +74,9 @@ final class MealPlannerViewModel {
             weeklyPlan = plan
             dailyPlan = nil
             shoppingTracker.sync(from: plan.shoppingList)
+            SavedPlanStorage.save(daily: nil, weekly: plan)
+            bumpPlanSession()
+            clearActiveSavedBookmark()
         }
     }
 
@@ -82,6 +106,9 @@ final class MealPlannerViewModel {
                 }
                 if let updated {
                     dailyPlan = updated
+                    SavedPlanStorage.save(daily: updated, weekly: nil)
+                    bumpPlanSession()
+                    clearActiveSavedBookmark()
                 } else {
                     errorMessage = "Не удалось вставить блюдо в дневной план"
                 }
@@ -95,6 +122,9 @@ final class MealPlannerViewModel {
                 }
                 if let updated {
                     weeklyPlan = updated
+                    SavedPlanStorage.save(daily: nil, weekly: updated)
+                    bumpPlanSession()
+                    clearActiveSavedBookmark()
                 } else {
                     errorMessage = "Не удалось вставить блюдо в недельный план"
                 }
@@ -137,6 +167,75 @@ final class MealPlannerViewModel {
 
     func clearIngredientSwap() {
         ingredientSwapResult = nil
+    }
+
+    func saveCurrentPlanAsBookmark(name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let finalName = trimmed.isEmpty ? Self.defaultBookmarkTitle() : trimmed
+        if let d = dailyPlan {
+            let b = SavedPlanBookmark(id: UUID(), name: finalName, createdAt: Date(), daily: d, weekly: nil)
+            insertBookmark(b)
+            setActiveSavedBookmark(b.id)
+        } else if let w = weeklyPlan {
+            let b = SavedPlanBookmark(id: UUID(), name: finalName, createdAt: Date(), daily: nil, weekly: w)
+            insertBookmark(b)
+            setActiveSavedBookmark(b.id)
+        }
+    }
+
+    func deleteBookmark(id: UUID) {
+        savedPlanBookmarks.removeAll { $0.id == id }
+        SavedPlansLibraryStorage.save(savedPlanBookmarks)
+        if activeSavedBookmarkId == id {
+            clearActiveSavedBookmark()
+        }
+    }
+
+    func applyBookmark(_ bookmark: SavedPlanBookmark) {
+        if let d = bookmark.daily {
+            dailyPlan = d
+            weeklyPlan = nil
+            shoppingTracker.sync(from: d.shoppingList)
+            SavedPlanStorage.save(daily: d, weekly: nil)
+            bumpPlanSession()
+            setActiveSavedBookmark(bookmark.id)
+        } else if let w = bookmark.weekly {
+            weeklyPlan = w
+            dailyPlan = nil
+            shoppingTracker.sync(from: w.shoppingList)
+            SavedPlanStorage.save(daily: nil, weekly: w)
+            bumpPlanSession()
+            setActiveSavedBookmark(bookmark.id)
+        } else {
+            errorMessage = "В записи нет данных плана. Сохраните рацион ещё раз."
+        }
+    }
+
+    private func insertBookmark(_ bookmark: SavedPlanBookmark) {
+        savedPlanBookmarks.insert(bookmark, at: 0)
+        SavedPlansLibraryStorage.save(savedPlanBookmarks)
+    }
+
+    private func bumpPlanSession() {
+        planSessionId = UUID()
+    }
+
+    private func setActiveSavedBookmark(_ id: UUID) {
+        activeSavedBookmarkId = id
+        ActiveSavedBookmarkStorage.save(id)
+    }
+
+    private func clearActiveSavedBookmark() {
+        activeSavedBookmarkId = nil
+        ActiveSavedBookmarkStorage.save(nil)
+    }
+
+    private static func defaultBookmarkTitle() -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "ru_RU")
+        f.dateStyle = .short
+        f.timeStyle = .short
+        return "План \(f.string(from: Date()))"
     }
 
     private func requireKey() throws -> String {
