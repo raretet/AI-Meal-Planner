@@ -47,9 +47,9 @@ struct MainTabView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .blur(radius: model.isLoading ? 1.6 : 0)
+            .blur(radius: model.isPlanLoading ? 1.6 : 0)
 
-            if model.isLoading {
+            if model.isPlanLoading {
                 AILoadingOverlay()
                     .transition(.opacity)
                     .zIndex(10)
@@ -58,7 +58,7 @@ struct MainTabView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             customTabBar
         }
-        .allowsHitTesting(!model.isLoading)
+        .allowsHitTesting(!model.isPlanLoading)
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .preferredColorScheme(.dark)
     }

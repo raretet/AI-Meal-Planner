@@ -32,6 +32,7 @@ struct MealDetailView: View {
                             .font(.subheadline)
                         }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .glassCard()
 
                     VStack(alignment: .leading, spacing: 8) {
@@ -47,14 +48,17 @@ struct MealDetailView: View {
                                 Text(step)
                                     .font(.subheadline)
                                     .foregroundStyle(AppTheme.textSecondary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                             }
                         }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .glassCard()
 
                     Text(meal.whyItFits)
                         .font(.footnote)
                         .foregroundStyle(AppTheme.textSecondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .glassCard()
 
                     VStack(spacing: 12) {
@@ -66,7 +70,7 @@ struct MealDetailView: View {
                         } label: {
                             label("Почему это подходит", asset: "icon_explain", system: "sparkles")
                         }
-                        .disabled(model.isLoading)
+                        .disabled(model.isMealActionLoading)
 
                         Button {
                             Task {
@@ -76,7 +80,7 @@ struct MealDetailView: View {
                         } label: {
                             label("Другое блюдо", asset: "icon_regenerate", system: "arrow.triangle.2.circlepath")
                         }
-                        .disabled(model.isLoading)
+                        .disabled(model.isMealActionLoading)
 
                         TextField("Заменить ингредиент, напр. молоко", text: $swapIngredient)
                             .textFieldStyle(.roundedBorder)
@@ -89,7 +93,7 @@ struct MealDetailView: View {
                         } label: {
                             label("Альтернативы ингредиента", asset: "icon_swap", system: "leaf")
                         }
-                        .disabled(model.isLoading || swapIngredient.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .disabled(model.isMealActionLoading || swapIngredient.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
                 }
                 .padding(20)
@@ -118,6 +122,16 @@ struct MealDetailView: View {
                     }
                 }
             }
+            .overlay {
+                if model.isMealActionLoading {
+                    AILoadingOverlay(
+                        title: "Обрабатываю блюдо",
+                        subtitle: "AI анализирует и подбирает результат"
+                    )
+                    .transition(.opacity)
+                }
+            }
+            .allowsHitTesting(!model.isMealActionLoading)
         }
     }
 
@@ -127,6 +141,7 @@ struct MealDetailView: View {
             chip("Ж", meal.macros.fat)
             chip("У", meal.macros.carbs)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func chip(_ t: String, _ v: Int) -> some View {

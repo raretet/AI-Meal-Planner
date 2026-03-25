@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct AILoadingOverlay: View {
+    var title: String = "Генерирую план"
+    var subtitle: String = "AI подбирает блюда и макросы"
     @State private var rotate = false
     @State private var pulse = false
 
@@ -39,10 +41,10 @@ struct AILoadingOverlay: View {
                 }
 
                 VStack(spacing: 5) {
-                    Text("Генерирую план")
+                    Text(title)
                         .font(.headline)
                         .foregroundStyle(AppTheme.textPrimary)
-                    Text("AI подбирает блюда и макросы")
+                    Text(subtitle)
                         .font(.caption)
                         .foregroundStyle(AppTheme.textSecondary)
                 }

@@ -58,18 +58,6 @@ struct PlanHomeView: View {
             .background(AppTheme.background)
             .navigationTitle("План")
             .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
-            .overlay {
-                if model.isLoading {
-                    ZStack {
-                        Color.black.opacity(0.35).ignoresSafeArea()
-                        ProgressView()
-                            .tint(AppTheme.accent)
-                            .scaleEffect(1.2)
-                            .padding(28)
-                            .background(RoundedRectangle(cornerRadius: 18).fill(AppTheme.card))
-                    }
-                }
-            }
             .alert("Ошибка", isPresented: Binding(
                 get: { model.errorMessage != nil },
                 set: { if !$0 { model.clearError() } }

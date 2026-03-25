@@ -6,7 +6,9 @@ final class MealPlannerViewModel {
     var preferences: UserPreferences
     var dailyPlan: DailyPlanResponse?
     var weeklyPlan: WeeklyPlanResponse?
-    var isLoading = false
+    var isPlanLoading = false
+    var isMealActionLoading = false
+    var isLoading: Bool { isPlanLoading || isMealActionLoading }
     var errorMessage: String?
     var mealExplanation: MealExplanationResponse?
     var ingredientSwapResult: IngredientSwapResponse?
@@ -27,7 +29,7 @@ final class MealPlannerViewModel {
     }
 
     func generateDailyPlan() async {
-        await run {
+        await runPlan {
             let key = try requireKey()
             let raw = try await client.completeJSON(
                 userPrompt: PromptBuilder.dailyPlanRequest(prefs: preferences),
@@ -41,7 +43,7 @@ final class MealPlannerViewModel {
     }
 
     func generateWeeklyPlan() async {
-        await run {
+        await runPlan {
             let key = try requireKey()
             let raw = try await client.completeJSON(
                 userPrompt: PromptBuilder.weeklyPlanRequest(prefs: preferences),
@@ -55,7 +57,7 @@ final class MealPlannerViewModel {
     }
 
     func regenerateMeal(mealId: String, mealType: String, calories: Int) async {
-        await run {
+        await runMealAction {
             let key = try requireKey()
             let ctx = contextSummary()
             let raw = try await client.completeJSON(
@@ -103,7 +105,7 @@ final class MealPlannerViewModel {
     }
 
     func explainMeal(meal: PlannedMeal) async {
-        await run {
+        await runMealAction {
             let key = try requireKey()
             let summary = "\(meal.name). \(meal.shortDescription). \(meal.calories) kcal. Macros P\(meal.macros.protein) F\(meal.macros.fat) C\(meal.macros.carbs)."
             let raw = try await client.completeJSON(
@@ -115,7 +117,7 @@ final class MealPlannerViewModel {
     }
 
     func swapIngredient(_ name: String, context: String) async {
-        await run {
+        await runMealAction {
             let key = try requireKey()
             let raw = try await client.completeJSON(
                 userPrompt: PromptBuilder.ingredientSwapRequest(prefs: preferences, ingredient: name, context: context),
@@ -155,10 +157,23 @@ final class MealPlannerViewModel {
         return ""
     }
 
-    private func run(_ work: () async throws -> Void) async {
+    private func runPlan(_ work: () async throws -> Void) async {
         errorMessage = nil
-        isLoading = true
-        defer { isLoading = false }
+        isPlanLoading = true
+        defer { isPlanLoading = false }
+        do {
+            try await work()
+        } catch let e as MealAIClient.MealAIError {
+            errorMessage = e.localizedDescription
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func runMealAction(_ work: () async throws -> Void) async {
+        errorMessage = nil
+        isMealActionLoading = true
+        defer { isMealActionLoading = false }
         do {
             try await work()
         } catch let e as MealAIClient.MealAIError {
