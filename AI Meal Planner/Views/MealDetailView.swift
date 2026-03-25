@@ -16,7 +16,9 @@ struct MealDetailView: View {
                     Text(meal.shortDescription)
                         .foregroundStyle(AppTheme.textSecondary)
 
-                    macroRow
+                    if hasMacros(meal.macros) {
+                        macroRow
+                    }
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Ингредиенты")
@@ -142,6 +144,10 @@ struct MealDetailView: View {
             chip("У", meal.macros.carbs)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func hasMacros(_ macros: MacroGrams) -> Bool {
+        macros.protein > 0 || macros.fat > 0 || macros.carbs > 0
     }
 
     private func chip(_ t: String, _ v: Int) -> some View {

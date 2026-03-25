@@ -15,7 +15,9 @@ struct PlanHomeView: View {
                             title: "Сегодня",
                             subtitle: "\(d.summary.dailyCalories) ккал · \(d.summary.mealsCount) приёма · \(d.summary.goal)"
                         )
-                        macroSummary(d.macros)
+                        if hasMacros(d.macros) {
+                            macroSummary(d.macros)
+                        }
                         hydrationRow(d.hydration.targetMl)
                         ForEach(d.meals) { meal in
                             MealCardView(meal: meal) { selectedMeal = meal }
@@ -34,7 +36,7 @@ struct PlanHomeView: View {
                                         .font(.title3.bold())
                                         .foregroundStyle(AppTheme.textPrimary)
                                     Spacer()
-                                    if let m = day.macros {
+                                    if let m = day.macros, hasMacros(m) {
                                         Text("Б\(m.protein) Ж\(m.fat) У\(m.carbs)")
                                             .font(.caption.weight(.medium))
                                             .foregroundStyle(AppTheme.textSecondary)
@@ -131,6 +133,10 @@ struct PlanHomeView: View {
         .frame(maxWidth: .infinity)
         .background(RoundedRectangle(cornerRadius: 14).fill(AppTheme.card))
         .foregroundStyle(AppTheme.textPrimary)
+    }
+
+    private func hasMacros(_ macros: MacroGrams) -> Bool {
+        macros.protein > 0 || macros.fat > 0 || macros.carbs > 0
     }
 
     private func hydrationRow(_ ml: Int) -> some View {

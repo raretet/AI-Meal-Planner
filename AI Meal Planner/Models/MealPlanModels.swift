@@ -36,16 +36,14 @@ struct IngredientAmount: Codable, Hashable, Identifiable {
 }
 
 struct MacroGrams: Codable, Hashable {
-    static let minDisplayGram = 1
-
     let protein: Int
     let fat: Int
     let carbs: Int
 
     init(protein: Int, fat: Int, carbs: Int) {
-        self.protein = max(Self.minDisplayGram, protein)
-        self.fat = max(Self.minDisplayGram, fat)
-        self.carbs = max(Self.minDisplayGram, carbs)
+        self.protein = max(0, protein)
+        self.fat = max(0, fat)
+        self.carbs = max(0, carbs)
     }
 
     enum CodingKeys: String, CodingKey {
@@ -54,9 +52,9 @@ struct MacroGrams: Codable, Hashable {
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        let p = c.decodeFlexibleIntIfPresent(forKey: .protein, default: Self.minDisplayGram)
-        let f = c.decodeFlexibleIntIfPresent(forKey: .fat, default: Self.minDisplayGram)
-        let ca = c.decodeFlexibleIntIfPresent(forKey: .carbs, default: Self.minDisplayGram)
+        let p = c.decodeFlexibleIntIfPresent(forKey: .protein, default: 0)
+        let f = c.decodeFlexibleIntIfPresent(forKey: .fat, default: 0)
+        let ca = c.decodeFlexibleIntIfPresent(forKey: .carbs, default: 0)
         self.init(protein: p, fat: f, carbs: ca)
     }
 
@@ -117,7 +115,7 @@ struct PlannedMeal: Codable, Identifiable, Hashable {
         imagePrompt = try c.decodeIfPresent(String.self, forKey: .imagePrompt) ?? "\(name), healthy meal, premium food photography, soft light"
         ingredients = try c.decodeIfPresent([IngredientAmount].self, forKey: .ingredients) ?? []
         calories = max(0, c.decodeFlexibleIntIfPresent(forKey: .calories, default: 0))
-        macros = try c.decodeIfPresent(MacroGrams.self, forKey: .macros) ?? MacroGrams(protein: MacroGrams.minDisplayGram, fat: MacroGrams.minDisplayGram, carbs: MacroGrams.minDisplayGram)
+        macros = try c.decodeIfPresent(MacroGrams.self, forKey: .macros) ?? MacroGrams(protein: 0, fat: 0, carbs: 0)
         prepTimeMinutes = max(0, c.decodeFlexibleIntIfPresent(forKey: .prepTimeMinutes, default: 15))
         difficulty = try c.decodeIfPresent(String.self, forKey: .difficulty) ?? "easy"
         instructions = try c.decodeIfPresent([String].self, forKey: .instructions) ?? []
